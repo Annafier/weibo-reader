@@ -1,0 +1,22 @@
+{
+  "name": "weibo-reader",
+  "version": "1.0.0",
+  "description": "Weibo comment archiving and offline reading on macOS",
+  "main": "weibo_cli.js",
+  "scripts": {
+    "test": "node --test test/*.test.cjs",
+    "start": "node weibo_cli.js",
+    "desktop:build": "node scripts/build-desktop.js",
+    "desktop:open": "open \"dist/Weibo Reader.app\"",
+    "desktop:package": "node scripts/package-desktop.js"
+  },
+  "keywords": [],
+  "author": "selnokk",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@weibo-ai/weibo-cli": "^0.9.8",
+    "parse5": "7.3.0"
+  },
+  "buildNumber": 2025
+}

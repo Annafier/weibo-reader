@@ -1,0 +1,31 @@
+# Personal databases, exports, caches, dependencies and binaries
+/data/
+/output/
+/node_modules/
+/dist/
+/release/
+/coverage/
+*.log
+*.tmp
+.DS_Store
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.json
+auth.json
+tokens.json
+.codex/
+.agents/
+.vscode/
+.idea/
+AGENTS.md
+
+# Exchanged content is private data, never source
+*.wrdpack
+/data.zip
+
+/private/
