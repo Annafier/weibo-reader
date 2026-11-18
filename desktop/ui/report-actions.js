@@ -68,6 +68,7 @@ function handleReportEvent(event){
   return false;
  }
  if(event.type==='browserOpenFailed'){
+  if(state.pairRequest&&event.requestId===state.pairRequest.requestId){state.pairRequest=null;toast(event.message||'互动档案未能打开；文件已保存在 output/pair/。',true);return true;}
   if(state.browserReport?.id===event.id&&!state.busy&&taskMatchesForm(state.browserReport.query)){status('报告已保存，打开失败','warning');window.ReaderNotices?.reset($('progress-message'));$('progress-message').hidden=false;$('progress-message').textContent=event.message||'浏览器未能打开，请从已生成报告重试。';}
   if(state.browserReport?.id===event.id&&!state.busy&&taskMatchesForm(state.browserReport.query))window.ReaderNotices?.decorate($('progress-message'),{key:event.id+':open-failed'});toast(event.message||'报告已保存，浏览器打开失败；未修改已读状态。',true);return true;
  }
@@ -99,7 +100,7 @@ function handleReportEvent(event){
   else{window.ReaderNotices?.reset($('local-counts'));$('local-counts').hidden=false;$('local-counts').textContent=event.message;window.ReaderNotices?.decorate($('local-counts'),{key:event.requestId||'local-error'});toast(event.message,true);}
   return true;
  }
- if(event.type==='browserOpened'){if(!state.busy&&state.browserReport?.id===event.id&&taskMatchesForm(state.browserReport.query)){window.ReaderNotices?.reset($('progress-message'));$('progress-message').hidden=false;$('progress-message').textContent='报告已在默认浏览器打开。';}return true;}
+ if(event.type==='browserOpened'){if(state.pairRequest&&event.requestId===state.pairRequest.requestId){state.pairRequest=null;toast('互动档案已生成并在默认浏览器打开。');return true;}if(!state.busy&&state.browserReport?.id===event.id&&taskMatchesForm(state.browserReport.query)){window.ReaderNotices?.reset($('progress-message'));$('progress-message').hidden=false;$('progress-message').textContent='报告已在默认浏览器打开。';}return true;}
  if(event.type==='reportMarkedRead'){
   const matching=event.targetKind==='post'?state.selection?.kind==='post'&&!!event.postId&&currentTarget()===event.postId:!!event.uid&&ReaderIdentity.user(state)===event.uid;
   if(state.task==='report'&&state.view==='create'&&matching&&event.readingChanged!==false){state.localResult=null;state.localRequest=null;scheduleLocal();}

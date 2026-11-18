@@ -847,6 +847,14 @@ function runBridge(configuration = {}) {
                 case 'localExport':
                     await localActions.handle(message);
                     break;
+                case 'pairReport': {
+                    // 定向互动档案：纯本地离线生成，0 credits；产物经 open 事件交给壳打开。
+                    const uidA = String(message.uidA || ''), uidB = String(message.uidB || '');
+                    const { file, stats, nicknames, warnings } = require('../lib/pair-report').generatePairReport(workspace, uidA, uidB);
+                    publish('pairReportResult', { requestId: message.requestId, workspace, uidA, uidB, file, total: stats.total, nicknames, warnings });
+                    publish('open', { path: file, kind: 'report', workspace, requestId: message.requestId, id: 'pair:' + uidA + ':' + uidB });
+                    break;
+                }
                 case 'updateHistory': {
                     const o = options(buildArguments({ mode: message.mode, target: message.target, policy: 'database', unlimited: true })), paths = require('../lib/storage').storagePaths(workspace), root = o.mode === 'user-posts' ? paths.posts : o.mode === 'post-comments' ? paths.postComments : paths.users, dir = o.postId ? require('../lib/storage').findPostFolder(root, o.postId) : require('../lib/storage').mappedFolder(root, o.uid, require('../lib/storage').indexRead(root));
                     const rounds=new Map(),budget=require('../lib/auto-follow-budget');

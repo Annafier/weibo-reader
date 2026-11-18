@@ -31,5 +31,6 @@ npm run win            # 等价于 node windows/win-reader.js
 
 - 打开报告/文件夹使用系统默认浏览器与资源管理器；报告未读回执仍由引擎的交接凭据保证（`reportHandoff`/`reportOpened`）。
 - 外部微博链接沿用 `ExternalLinks.swift` 的同一套白名单校验。
-- 反馈诊断基于壳内环形日志（引擎 stderr 为主）；导出为本地 txt，由用户自行发送。
-- 测试套件中依赖 POSIX FIFO / 无特权符号链接的个别用例在 Windows 上自动跳过（`npm test` 当前 128 通过 / 1 跳过）。
+- 反馈诊断基于壳内环形日志（引擎 stderr 为主）；导出为本地 txt，由你自行发送。
+- 测试套件中依赖 POSIX FIFO / 无特权符号链接的个别用例在 Windows 上自动跳过（`npm test` 当前 131 通过 / 1 跳过）。
+- 双端同步支持新的「定向互动档案」（见根 README）；报告输出到 `output/pair/`，由壳经 `open` 事件在默认浏览器打开。
