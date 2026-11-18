@@ -1,31 +1,50 @@
 # Weibo Reader Windows 端
 
-复用项目的全部核心实现（`lib/` 数据与采集、`desktop/bridge.js` 引擎桥、`desktop/ui/` 界面），仅将 macOS 的 AppKit/WebKit 原生壳替换为一个纯 Node.js 的 Windows 壳，不引入任何新的 npm 依赖。
+复用项目的全部核心实现（`lib/` 数据与采集、`desktop/bridge.js` 引擎桥），Windows 端提供**两套前端**：
+
+1. **原生 WPF 壳（推荐）**：`windows/native/` —— C# 5 + WPF，用 Windows 自带的 in-box `csc.exe` 编译，**无需安装任何 SDK**。引擎仍是 `desktop/bridge.js`（stdio JSON 行协议），UI 为原生控件（深色主题，对标 macOS 版功能子集）。
+2. **网页壳**：`windows/win-reader.js` —— 纯 Node.js 壳 + 共享 HTML 界面（`desktop/ui/`），作为原生壳的回退。
 
 ## 运行要求
 
 - Node.js 22.5 或更新版本（使用内置 `node:sqlite`）。
-- 界面窗口按优先级自动选择：本机的 Edge / Chrome / Brave（Chromium 内核，应用模式无边框窗口）→ Firefox（独立资料的普通窗口）→ 系统默认浏览器。
-- 原生对话框（选择资料目录、导出/导入数据包）与剪贴板通过系统 PowerShell 实现，无需额外安装。
+- 原生壳：Windows 10/11 自带的 .NET Framework 4.x + csc.exe 即可编译；首次运行自动编译（约 10 秒）。
+- 网页壳回退时按优先级选择：本机的 Edge / Chrome / Brave（应用模式无边框窗口）→ Firefox（独立资料）→ 系统默认浏览器。
 
 ## 启动
 
+双击仓库根目录的 [`一键启动.cmd`](../一键启动.cmd)：自动检查 Node.js → 安装依赖 → 编译原生 UI（首次）→ 启动 `WeiboReader.exe`。
+
+命令行方式：
+
 ```powershell
 npm install
-npm run win            # 等价于 node windows/win-reader.js
+windows\native\build.cmd     # 编译原生 UI（可选）
+windows\native\out\WeiboReader.exe --workspace D:\某个目录
+npm run win                  # 回退：网页壳
 ```
 
-- 默认资料目录为 `%APPDATA%\selnokk.weibo.reader`；首次启动可用 `npm run win -- --workspace D:\某个目录` 指定并持久化。
-- 重复启动不会开第二个引擎：新进程只会在同一会话上再开一个应用窗口。
-- 关闭窗口即优雅退出：壳向引擎发送 `shutdown`，等待数据落盘后结束（5 秒超时强杀）。
+- 默认资料目录为 `%APPDATA%\selnokk.weibo.reader`。
+- 原生壳支持 `--selftest`（11 项自检）、`--log-events`（事件日志）。
+- 关闭窗口即优雅退出：壳向引擎发送 `shutdown`，5 秒超时强杀。
 
-## 结构
+## 原生结构（windows/native/）
 
-- `windows/win-reader.js` —— 壳本体：托管引擎子进程（stdio JSON 行协议）、本地回环 HTTP 服务（静态页面 + SSE 事件流 + `/bridge` 请求上行）、原生动作路由、会话单例、窗口生命周期（跟踪 SSE 连接，全部窗口关闭后优雅退出）。
-- `windows/windows-shim.js` —— 页面侧桥：`window.weiboBrowserHarness` 上行请求，SSE 下行事件分发到 `window.weiboReceive`（对应 macOS 壳的 `window.webkit.messageHandlers` 注入脚本）。
-- `windows/smoke.cjs` —— 无头冒烟测试（`npm run win:smoke`）：验证页面服务、CSP 改写、引擎握手与事件流。
+- `build.cmd` —— 定位 in-box csc 与 GAC 程序集，编译 `src/*.cs` → `out/WeiboReader.exe`
+- `src/Program.cs` —— 入口/日志/崩溃兜底；`src/Json.cs` —— JavaScriptSerializer 访问器（嵌套数组是 ArrayList）
+- `src/EngineClient.cs` —— bridge 子进程托管与事件泵；`src/AppState.cs` —— 状态归并
+- `src/MainWindow.cs` —— 侧边栏导航、credits 头、open 事件拦截、reportHandoff 回执、OnShown 节流
+- `src/Dialogs.cs` —— 目录/文件对话框、剪贴板、与 ExternalLinks.swift 同规则外链白名单
+- `src/views/` —— 盯单人（列表+详情）、盯版聊（列表+详情）、持续盯防、账户与设置
+- `CONTRACT.md` —— 页面与引擎协议契约（并行实现的依据）
 
-界面文件与 macOS 版完全同源：壳在服务 `index.html` 时动态注入 shim 引用并把 CSP 的 `connect-src 'none'` 放宽为 `'self'`，磁盘上的共享文件不做修改。
+## 网页壳结构
+
+- `windows/win-reader.js` —— 壳本体：托管引擎、本地回环 HTTP/SSE 服务、原生动作路由、会话单例、窗口生命周期（跟踪 SSE 连接）。
+- `windows/windows-shim.js` —— 页面侧桥（对应 macOS 壳的注入脚本）。
+- `windows/smoke.cjs` —— 无头冒烟测试（`npm run win:smoke`）。
+
+界面文件与 macOS 版完全同源：网页壳在服务 `index.html` 时动态注入 shim 引用并把 CSP 的 `connect-src 'none'` 放宽为 `'self'`，磁盘上的共享文件不做修改。
 
 ## 与 macOS 版的行为差异
 
