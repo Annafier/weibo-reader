@@ -1,5 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
+// File symlinks need elevated privileges or Developer Mode on Windows; probe once.
+const fileSymlink=(()=>{const d=fs.mkdtempSync(path.join(os.tmpdir(),'weibo-symlink-probe-'));try{fs.symlinkSync('probe',path.join(d,'l'));return true;}catch(error){if(error.code!=='EPERM')throw error;return false;}finally{fs.rmSync(d,{recursive:true,force:true});}})();
 const X=require('../lib/data-exchange'),S=require('../lib/exchange-schema'),E=require('../lib/exchange-records'),I=require('../lib/incremental');
 const uid='1000000101',peer='1234567890',post='90071992547409940';
 const save=(f,v)=>{fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(v));};
@@ -146,7 +148,7 @@ test('exchange: an unindexed legacy applying plan requires explicit reinspection
  assert.deepEqual([...loaded(b).keys()].sort(),['101','102','103','104']);assert.deepEqual(fs.readFileSync(oldJob),oldBytes);
 }));
 test('exchange: damaged hashes, path traversal, incompatible versions, oversized entries and symlinks are rejected',()=>fixture(async({a,b,outside})=>{
- seed(a);const p=await pack(a,outside),original=parsePack(p);for(const change of [m=>m.version=99,m=>m.files[0].path='../escape.json',m=>m.files[0].path='/absolute.json',m=>m.files[0].bytes=X.LIMITS.file+1,m=>m.files[0].sha256='0'.repeat(64),m=>m.objects[0].token='forbidden']){const m=structuredClone(original.manifest),bad=path.join(outside,'bad.wrdpack');change(m);malicious(bad,m,original.data);await assert.rejects(X.inspect(b,bad));assert.equal(loaded(b).size,0);}const link=path.join(outside,'link.wrdpack');fs.symlinkSync(p,link);await assert.rejects(X.inspect(b,link));assert.equal(loaded(b).size,0);
+ seed(a);const p=await pack(a,outside),original=parsePack(p);for(const change of [m=>m.version=99,m=>m.files[0].path='../escape.json',m=>m.files[0].path='/absolute.json',m=>m.files[0].bytes=X.LIMITS.file+1,m=>m.files[0].sha256='0'.repeat(64),m=>m.objects[0].token='forbidden']){const m=structuredClone(original.manifest),bad=path.join(outside,'bad.wrdpack');change(m);malicious(bad,m,original.data);await assert.rejects(X.inspect(b,bad));assert.equal(loaded(b).size,0);}if(fileSymlink){const link=path.join(outside,'link.wrdpack');fs.symlinkSync(p,link);await assert.rejects(X.inspect(b,link));}assert.equal(loaded(b).size,0);
 }));
 test('exchange: concurrent writers prevent merge/export; changed inspection snapshot requires a fresh confirmation',()=>fixture(async({a,b,outside})=>{
  seed(a);const p=await pack(a,outside),check=await X.inspect(b,p),release=require('../lib/workspace-access').enter(b);try{await assert.rejects(X.commit(b,check.id),/仍在保存/);}finally{release();}seed(b,[99]);await assert.rejects(X.commit(b,check.id),/本地数据在检查后/);assert.equal(loaded(b).size,1);
@@ -246,10 +248,12 @@ test('exchange: discard keeps a registered inspection or any existing merge curs
  assert.ok(fs.existsSync(path.join(stage(check.id),'job.json')));
  assert.ok(fs.existsSync(path.join(root,'pending.json')));
  const cursor=path.join(stage(other.id),'progress.json');
- fs.symlinkSync('missing-cursor.json',cursor);
- assert.throws(()=>X.discard(b,other.id),/暂存已保留/);
- assert.ok(fs.lstatSync(cursor).isSymbolicLink());
- fs.unlinkSync(cursor);
+ if(fileSymlink){
+  fs.symlinkSync('missing-cursor.json',cursor);
+  assert.throws(()=>X.discard(b,other.id),/暂存已保留/);
+  assert.ok(fs.lstatSync(cursor).isSymbolicLink());
+  fs.unlinkSync(cursor);
+ }
  X.discard(b,other.id);
  assert.ok(!fs.existsSync(stage(other.id)));
  assert.ok(fs.existsSync(path.join(root,'pending.json')));

@@ -5,6 +5,7 @@ function copyProject(dest,{reportParser=false}={}){const root=path.resolve(__dir
  if(!reportParser)return;
  const modules=path.join(dest,'node_modules');
  fs.mkdirSync(modules,{recursive:true});
- fs.symlinkSync(path.join(root,'node_modules','parse5'),path.join(modules,'parse5'),'dir');
+ // Junctions, unlike directory symlinks, do not require elevated privileges on Windows.
+ fs.symlinkSync(path.join(root,'node_modules','parse5'),path.join(modules,'parse5'),process.platform==='win32'?'junction':'dir');
 }
 module.exports={copyProject};

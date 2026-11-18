@@ -71,11 +71,11 @@ function listReports(workspace,{includeDatabase=true,database=includeDatabase?re
    if(!folder.isDirectory()||folder.isSymbolicLink())continue;const dir=path.join(base,folder.name),user=byFolder.get(folder.name)||{};const ownerUid=user.uid||catalogOwners.get(category+'/'+folder.name)||'';if(owners&&!owners.has(category==='post-comments'?'post:'+require('../lib/storage').postIdFromFolder(folder.name):'user:'+ownerUid))continue;
    for(const name of fs.readdirSync(dir,{withFileTypes:true})){
     if(!name.isFile()||!name.name.endsWith('.html'))continue;const file=path.join(dir,name.name);let stat;try{stat=fs.statSync(file);}catch{continue;}
-    const data={...describe(name.name,category,user.nickname||folder.name,user.uid||''),...(catalog[path.relative(root,file)]||{})};
+    const data={...describe(name.name,category,user.nickname||folder.name,user.uid||''),...(catalog[path.relative(root,file).split(path.sep).join('/')]||{})};
     if(data.merged){try{const meta=jsonFile(path.join(require('../lib/data-layout').readerRoot(workspace),'merges',data.uid+'.json'),null);if(meta){data.count=meta.count;data.partial=!!meta.missing?.length||!!meta.coverageIncomplete;data.sourceCount=meta.sourceCount;}}catch{}}
     let db=byOwner.get(category+'|'+(data.uid||data.postId||data.account));
     if(!db&&fallback.has(dir))db=fallback.get(dir);else if(includeDatabase&&!db){const runs=path.join(require('../lib/data-layout').dataForReport(workspace,dir),'cache/runs');try{const newest=fs.readdirSync(runs).filter(n=>n.endsWith('.json')).sort().at(-1),run=newest?jsonFile(path.join(runs,newest),null):null;if(run?.uid===data.uid)db={updatedAt:run.createdAt,incomplete:run.endpoints?.some(e=>e.result?.incomplete||e.coverageUnverified)};}catch{}fallback.set(dir,db);}
-    reports.push({databaseUpdatedAt:db?.updatedAt||null,databaseIncomplete:!!db?.incomplete,id:path.relative(root,file),name:name.name.replace(/\.html$/,''),category,size:stat.size,modified:stat.mtimeMs,...data,ownerKey:reportOwnerKey({...data,category,uid:data.uid||ownerUid})});
+    reports.push({databaseUpdatedAt:db?.updatedAt||null,databaseIncomplete:!!db?.incomplete,id:path.relative(root,file).split(path.sep).join('/'),name:name.name.replace(/\.html$/,''),category,size:stat.size,modified:stat.mtimeMs,...data,ownerKey:reportOwnerKey({...data,category,uid:data.uid||ownerUid})});
    }
   }
  }
@@ -151,7 +151,7 @@ function mergeReports(workspace,uid){
  const meta={coverageUnverified:coverageIncomplete,kind:'both',budget:rows.length,fetched:rows.length,rows,requests:0,cachedCalls:0,ended:true,failed:missing.length>0,reason:coverageIncomplete?'最近一次不限量采集尚未核实完整；'+coverage.reason:missing.length?'部分正式记录缺少可恢复的本地原文':'已合并本地保存记录；不代表全部历史完整'};
  const info={schema:1,uid,coverageIncomplete,coverage,count:rows.length,sourceCount:Object.keys(sources).length,missing,mergedAt:new Date().toISOString(),sources};
  const options={uid,shareReport:true,mode:'both',offline:true,workspace,merged:true,reportPartial:coverageIncomplete||missing.length>0,mergeInfo:{sourceCount:info.sourceCount}},sorted=sortRecords(rows),catalog=require('../lib/report-catalog');
- const saved=catalog.write(file,options,sorted,label,()=>render(options,sorted,[meta],label),catalog.contentKey(options,sorted,[meta],label)),id=path.relative(require('../lib/data-layout').canonical(path.join(workspace,'output')),require('../lib/data-layout').canonical(saved.file));
+ const saved=catalog.write(file,options,sorted,label,()=>render(options,sorted,[meta],label),catalog.contentKey(options,sorted,[meta],label)),id=path.relative(require('../lib/data-layout').canonical(path.join(workspace,'output')),require('../lib/data-layout').canonical(saved.file)).split(path.sep).join('/');
  atomic(path.join(require('../lib/data-layout').readerRoot(workspace),'merges',uid+'.json'),info);
  return {id,count:rows.length,sourceCount:info.sourceCount,missing:missing.length,incomplete:coverageIncomplete||missing.length>0,coverageIncomplete};
 }

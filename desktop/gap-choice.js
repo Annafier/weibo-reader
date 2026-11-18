@@ -84,7 +84,7 @@ function applyFuture(base,file,decision,{fault=()=>{}}={}){
  }else if(BigInt(current.anchor)<BigInt(manual.proof.head))throw Error('已保存选择的后续起点不一致');
  if(decision.baselineAction!=='retain-current-head')P.atomic(manual.file,{...manual.task,userGapChoice:{id:decision.id,at:decision.at,reason:decision.reason}});fault('after-task');
  // The prepared decision remains replayable until dependent writes are durable.
- for(const targetFile of [target,...(decision.baselineAction==='retain-current-head'?[]:[manual.file])]){const fd=require('../lib/regular-file').open(targetFile);try{fs.fsyncSync(fd);}finally{fs.closeSync(fd);}const parent=fs.openSync(path.dirname(targetFile),fs.constants.O_RDONLY|fs.constants.O_DIRECTORY|fs.constants.O_NOFOLLOW);try{fs.fsyncSync(parent);}finally{fs.closeSync(parent);}}
+ for(const targetFile of [target,...(decision.baselineAction==='retain-current-head'?[]:[manual.file])]){const fd=require('../lib/regular-file').open(targetFile);try{require('../lib/regular-file').fsync(fd);}finally{fs.closeSync(fd);}require('../lib/regular-file').syncDirectory(path.dirname(targetFile));}
  decision.status='committed';decision.committedAt=new Date().toISOString();require('../lib/durable-write').atomic(file,decision);return decision;
 }
 function selectedState(state,decision,proof){

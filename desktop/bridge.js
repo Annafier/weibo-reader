@@ -399,7 +399,7 @@ function runBridge(configuration = {}) {
                     const root = path.resolve(workspace, 'output'), file = path.resolve(event.file || '');
                     if (!file.startsWith(root + path.sep))
                         return;
-                    event.id = path.relative(root, file);
+                    event.id = path.relative(root, file).split(path.sep).join('/');
                     delete event.file;
                     job.reports.push(event.id);
                 }

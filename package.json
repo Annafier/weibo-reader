@@ -6,6 +6,8 @@
   "scripts": {
     "test": "node --test test/*.test.cjs",
     "start": "node weibo_cli.js",
+    "win": "node windows/win-reader.js",
+    "win:smoke": "node windows/smoke.cjs",
     "desktop:build": "node scripts/build-desktop.js",
     "desktop:open": "open \"dist/Weibo Reader.app\"",
     "desktop:package": "node scripts/package-desktop.js"

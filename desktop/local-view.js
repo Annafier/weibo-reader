@@ -110,7 +110,7 @@ function createLocalView(base){
    if(jobs.some((job,i)=>job!==value.jobs[i])){value={...value,jobs,htmls:null};for(const job of jobs)job.outputKey=outputKey(value,job);}
   }
   for(let i=0;i<value.jobs.length;i++){const job=value.jobs[i];if(!job.rows.length)continue;const key=job.outputKey,existing=reusable(key,value.o);if(existing){files.push(existing);reused++;continue;}const html=render(value)[i],dir=require('../lib/data-layout').reportDir(value.dir,base);fs.mkdirSync(dir,{recursive:true});require('../lib/data-layout').mirrorImages(value.dir,base);const name=require('../lib/report-name').fileName(value.label,{...value.o,mode:job.kind},job.rows.length),file=path.join(dir,name);
-   const saved=require('../lib/report-catalog').write(file,{...value.o,workspace:base,mode:job.kind},job.rows,value.label,()=>html,key);files.push(path.relative(path.join(base,'output'),saved.file));
+   const saved=require('../lib/report-catalog').write(file,{...value.o,workspace:base,mode:job.kind},job.rows,value.label,()=>html,key);files.push(path.relative(path.join(base,'output'),saved.file).split(path.sep).join('/'));
   }return {files,reused:files.length>0&&reused===files.length,token:value.token,summary:value.summary};
  });}
  return {prepare,render,exportCurrent,exportConversation:(input,selection)=>exportCurrent(input,null,selection),stats:()=>({parses,renders}),cacheStats:()=>({datasets:datasets.size,prepared:prepared.size})};
