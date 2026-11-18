@@ -1,29 +1,39 @@
 @echo off
-chcp 65001 >nul
 title Weibo Reader
 cd /d "%~dp0"
 
-rem Weibo Reader 一键启动：检查环境 -> 安装依赖 -> 启动 Windows 壳
+rem One-click launcher: check environment, install deps, start the native UI.
 where node >nul 2>nul
 if errorlevel 1 (
-    echo [Weibo Reader] 未找到 Node.js，请先安装 Node.js 22.5 或更新版本：https://nodejs.org/
+    echo [Weibo Reader] Node.js not found. Install Node.js 22.5+ from https://nodejs.org/
     pause
     exit /b 1
 )
 
 if not exist node_modules (
-    echo [Weibo Reader] 首次运行，正在安装依赖（约几秒钟）...
+    echo [Weibo Reader] First run: installing dependencies...
     call npm install
     if errorlevel 1 (
-        echo [Weibo Reader] 依赖安装失败，请检查网络后重试。
+        echo [Weibo Reader] npm install failed. Check your network and try again.
         pause
         exit /b 1
     )
 )
 
-echo [Weibo Reader] 正在启动...
-node windows/win-reader.js %*
+if not exist "windows\native\WeiboReader.exe" (
+    echo [Weibo Reader] First run: building the native UI, about 10 seconds...
+    call "windows\native\build.cmd"
+    if errorlevel 1 (
+        echo [Weibo Reader] Native UI build failed. Falling back to the web shell.
+        node windows/win-reader.js %*
+        if errorlevel 1 pause
+        exit /b %errorlevel%
+    )
+)
+
+echo [Weibo Reader] Starting...
+"windows\native\WeiboReader.exe" %*
 if errorlevel 1 (
-    echo [Weibo Reader] 启动失败，详见上方日志。
+    echo [Weibo Reader] Exited with an error. See windows\native\ui.log
     pause
 )
