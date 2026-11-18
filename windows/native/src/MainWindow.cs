@@ -133,6 +133,7 @@ public partial class MainWindow : Window {
     }
     void OnEngineEvent(Dictionary<string, object> e) {
         var type = Json.S(e, "type");
+        if (Program.LogEvents) Program.Log("event " + type);
         switch (type) {
             case "library": {
                 State.Apply(e);

@@ -9,6 +9,7 @@ public class App : Application {}
 public static class Program {
     public static string RepoRoot;
     public static string Workspace;
+    public static bool LogEvents;
 
     [STAThread]
     public static int Main(string[] args) {
@@ -20,6 +21,7 @@ public static class Program {
         for (int i = 0; i < args.Length; i++) {
             if (args[i] == "--workspace" && i + 1 < args.Length) Workspace = args[i + 1];
             if (args[i] == "--selftest") selftest = true;
+            if (args[i] == "--log-events") LogEvents = true;
         }
         AppDomain.CurrentDomain.UnhandledException += OnUnhandled;
         var app = new App();
