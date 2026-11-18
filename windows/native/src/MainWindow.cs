@@ -20,6 +20,7 @@ public partial class MainWindow : Window {
     public readonly AppState State = new AppState();
     public EngineClient Engine;
     readonly Dictionary<string, IEnginePage> pages = new Dictionary<string, IEnginePage>();
+    readonly Dictionary<string, DateTime> lastShownAt = new Dictionary<string, DateTime>();
     string currentPageKey = "";
     TextBlock creditsText;
     TextBlock toastText;
@@ -195,8 +196,16 @@ public partial class MainWindow : Window {
         var changed = State.Apply(e);
         IEnginePage page;
         if (pages.TryGetValue(currentPageKey, out page)) page.OnEngineEvent(e);
+        // Refreshed home data re-renders the active page. OnShown is throttled
+        // per page: events the page itself triggered would otherwise loop
+        // (library → OnShown → library) and spam the engine.
         if (changed && (currentPageKey == "users" || currentPageKey == "posts" || currentPageKey == "subscriptions" || currentPageKey == "settings")) {
-            if (pages.TryGetValue(currentPageKey, out page)) page.OnShown();
+            DateTime previous;
+            var at = lastShownAt.TryGetValue(currentPageKey, out previous) ? previous : DateTime.MinValue;
+            if ((DateTime.UtcNow - at).TotalMilliseconds >= 2000) {
+                lastShownAt[currentPageKey] = DateTime.UtcNow;
+                if (pages.TryGetValue(currentPageKey, out page)) page.OnShown();
+            }
         }
     }
     void Deliver(Dictionary<string, object> e) {

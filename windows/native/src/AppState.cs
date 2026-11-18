@@ -211,7 +211,16 @@ public class AppState {
                 return false;
             }
             case "account": {
-                AccountText = Json.S(e, "text");
+                // Bridge sends {username,balance,service} (no text field).
+                var username = Json.S(e, "username");
+                var balance = Json.N(e, "balance");
+                var service = Json.S(e, "service");
+                var built = "";
+                if (username.Length > 0) built += "账户 " + username + "\n";
+                built += "余额 " + balance + " credits";
+                if (service.Length > 0) built += " · 服务状态 " + service;
+                AccountText = built;
+                Credits = balance;
                 return false;
             }
         }
