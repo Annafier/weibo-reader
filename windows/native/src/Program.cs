@@ -13,12 +13,12 @@ public static class Program {
     public static string Workspace;
     public static bool LogEvents;
 
-    [STAThread]
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
+    [STAThread]
     public static int Main(string[] args) {
         RepoRoot = AppDomain.CurrentDomain.BaseDirectory;
         // exe lives in windows\native\out; repo root is three levels up.
