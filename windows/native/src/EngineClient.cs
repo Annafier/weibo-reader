@@ -38,6 +38,17 @@ public class EngineClient : IDisposable {
         };
         info.EnvironmentVariables["NODE_ENV"] = "production";
         info.EnvironmentVariables["NODE_TLS_REJECT_UNAUTHORIZED"] = "1";
+        // weibo-cli 的 Windows openBrowser（cmd start）会把授权 URL 在 & 处拆断，
+        // 通过 NODE_OPTIONS --require 注入 quoting 修复（见 windows\cli-open-fix.cjs）。
+        var openFix = Path.Combine(root, "windows", "cli-open-fix.cjs");
+        if (File.Exists(openFix)) {
+            // NODE_OPTIONS mangles backslashes/quotes on Windows: use forward slashes unquoted.
+            var forward = openFix.Replace('\\', '/');
+            var nodeOptions = info.EnvironmentVariables["NODE_OPTIONS"];
+            info.EnvironmentVariables["NODE_OPTIONS"] = string.IsNullOrEmpty(nodeOptions)
+                ? "--require " + forward
+                : nodeOptions + " --require " + forward;
+        }
         process = Process.Start(info);
         stdin = process.StandardInput;
         stdin.AutoFlush = true;

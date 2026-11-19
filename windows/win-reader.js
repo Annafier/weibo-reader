@@ -38,9 +38,15 @@ function log(message, level = 'error') {
 function startEngine(explicitWorkspace) {
   workspace = path.resolve(explicitWorkspace || defaultWorkspace());
   engineAlive = true;
-  engine = spawn(process.execPath, [path.join(ROOT, 'desktop', 'bridge.js'), '--workspace', workspace, '--wait-for-ready'], {
+    engine = spawn(process.execPath, [path.join(ROOT, 'desktop', 'bridge.js'), '--workspace', workspace, '--wait-for-ready'], {
     cwd: ROOT, windowsHide: true,
-    env: { ...process.env, NODE_ENV: 'production', NODE_TLS_REJECT_UNAUTHORIZED: '1' },
+    env: (() => {
+      const env = { ...process.env, NODE_ENV: 'production', NODE_TLS_REJECT_UNAUTHORIZED: '1' };
+      // weibo-cli 的 Windows openBrowser 会在 & 处拆断授权 URL，注入 quoting 修复。
+      const openFix = path.join(ROOT, 'windows', 'cli-open-fix.cjs');
+      if (fs.existsSync(openFix)) env.NODE_OPTIONS = (env.NODE_OPTIONS ? env.NODE_OPTIONS + ' ' : '') + '--require ' + openFix.split('\\').join('/');
+      return env;
+    })(),
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   engineInput = engine.stdin;
