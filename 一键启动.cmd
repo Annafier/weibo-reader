@@ -20,7 +20,7 @@ if not exist node_modules (
     )
 )
 
-if not exist "windows\native\WeiboReader.exe" (
+if not exist "windows\native\out\WeiboReader.exe" (
     echo [Weibo Reader] First run: building the native UI, about 10 seconds...
     call "windows\native\build.cmd"
     if errorlevel 1 (
@@ -32,7 +32,7 @@ if not exist "windows\native\WeiboReader.exe" (
 )
 
 echo [Weibo Reader] Starting...
-"windows\native\WeiboReader.exe" %*
+"windows\native\out\WeiboReader.exe" %*
 if errorlevel 1 (
     echo [Weibo Reader] Exited with an error. See windows\native\ui.log
     pause
